@@ -112,9 +112,9 @@ tr:last-child td{border-bottom:none}
 <div class="card">
 <div class="rot">Painéis do colete — toque no painel e digite</div>
 <div id="paineis" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+<div id="res1" style="height:150px;overflow-y:auto;margin-top:8px;border:1px solid var(--linha);border-radius:8px;background:var(--papel)"></div>
 <div id="fotoBox" style="margin-top:9px"></div>
 <input type="file" id="cam" accept="image/*" capture="environment" class="oculto" onchange="recebeFoto(this)">
-<div class="res" id="res1"></div>
 <div class="aviso" id="aviso"></div>
 
 <div id="tec" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px"></div>
@@ -166,6 +166,15 @@ tr:last-child td{border-bottom:none}
 <div class="barra"><button onclick="salvarCfg()">Salvar estantes</button></div>
 <p class="sub" style="margin:10px 0 0">Um número de prateleiras por coluna, separados por espaço. Ex.: <b>4 4 3 4 4</b> para uma estante de cinco colunas.</p>
 </div>
+<div class="card">
+<div class="rot">Sentido da pilha</div>
+<p class="sub" style="margin:0 0 8px">A posição sempre é contada de baixo para cima. Diga por onde você começa a desempilhar.</p>
+<div class="barra">
+<button id="btTopo" style="flex:1" onclick="setSentido('topo')">Começo pelo de cima</button>
+<button id="btBase" style="flex:1" onclick="setSentido('base')">Começo pelo de baixo</button>
+</div>
+</div>
+
 <div class="card">
 <div class="rot">Onde estão as fotos</div>
 <input type="text" id="cfgFoto" placeholder="https://usuario.github.io/repo/fotos/">
@@ -253,6 +262,8 @@ function atualizaResta(){
 }
 function ondeEsta(i){for(const k in reg){const r=reg[k];if(r.a===i||r.b===i)return r;}return null;}
 function naPilha(e){return e?Object.values(reg).filter(r=>r.e===e.e&&r.c===e.c&&r.p===e.p).sort((x,y)=>x.pos-y.pos):[];}
+function totalPilha(r){return Object.values(reg).filter(z=>z.e===r.e&&z.c===r.c&&z.p===r.p).length;}
+function posBaixo(r){return sentido==='base'?r.pos:(totalPilha(r)-r.pos+1);}
 function conta(e,c,p){return Object.values(reg).filter(r=>r.e===e&&r.c===c&&r.p===p).length;}
 
 function desenhaSala(){
@@ -283,7 +294,7 @@ function pickCel(c,p){col=c;pra=p;desenhaDetalhe();atualizaCab();desenhaPilha();
 function atualizaCab(){
   const e=atual();
   document.getElementById('endTxt').textContent=e?End(e):'—';
-  document.getElementById('proxPos').textContent=e?naPilha(e).length+1:'—';
+  document.getElementById('proxPos').textContent=e?(sentido==='base'?(naPilha(e).length+1)+'º de baixo':'o próximo de cima'):'—';
 }
 function mostra(cls,txt){const a=document.getElementById('aviso');a.className='aviso on '+cls;a.innerHTML=txt;}
 function escondeAviso(){document.getElementById('aviso').className='aviso';}
@@ -343,7 +354,7 @@ function selecionar(i){
   else if(foraGrupo){bip(400,.3);
     mostra('a-er','Este colete é da <b>'+UN[r[0]]+' · '+NV[r[1]]+'</b>, e você marcou a pilha como '+UN[grupo[0]].split(' ·')[0]+' · '+NV[grupo[1]]+'. Ou o colete está guardado no lugar errado, ou o grupo lá em cima está errado. Confira antes de gravar.');}
   else if(ja){bip(520,.28);
-    mostra('a-at','O número '+r[3]+' já foi lançado em <b>'+End(ja)+'</b>, posição '+ja.pos+'. Puxe aquele colete e confronte os dois — pode ser painel trocado ou etiqueta lida errado.');}
+    mostra('a-at','O número '+r[3]+' já foi lançado em <b>'+End(ja)+'</b>, posição '+posBaixo(ja)+' de baixo para cima. Puxe aquele colete e confronte os dois — pode ser painel trocado ou etiqueta lida errado.');}
   else if(r[6]){bip(660,.22);
     mostra('a-at','Este colete <b>ainda não foi fotografado</b>. Como ele já está na sua mão, aproveite e tire a foto agora — depois marque como resolvido na aba Pendentes.');}
   else escondeAviso();
@@ -375,7 +386,7 @@ function gravar(){
   salvar();
   if(A!==null&&B!==null&&A!=='ILEG'&&B!=='ILEG'&&A!==B){bip(320,.34);
     mostra('a-er','Painéis diferentes: '+DB[A][3]+' na frente e '+DB[B][3]+' no verso. Gravado assim mesmo, aparece na aba Mapa.');}
-  else {bip(880,.1);mostra('a-ok','Gravado na posição '+pos+'.');}
+  else {bip(880,.1);mostra('a-ok','Gravado. É o '+posBaixo(reg[End(e)+'#'+pos])+'º de baixo para cima nesta pilha.');}
   pan={F:{buf:'',idx:null},V:{buf:'',idx:null}};lado='F';avisouVazio='';limpaFoto();
   desenhaSlots();desenhaPilha();desenhaDetalhe();atualizaCab();atualizaResta();
 }
@@ -397,9 +408,9 @@ function desenhaPilha(){
   const e=atual(),its=naPilha(e);
   if(!e){document.getElementById('pilha').innerHTML='<p class="sub" style="margin:0">Escolha uma prateleira acima.</p>';return;}
   if(!its.length){document.getElementById('pilha').innerHTML='<p class="sub" style="margin:0">Nada lançado em '+End(e)+' ainda.</p>';return;}
-  let h='<table><tr><th>Pos.</th><th>Lado A</th><th>Lado B</th><th>Situação</th><th></th></tr>';
-  its.forEach(r=>{const[s,t]=situacao(r);
-    h+='<tr><td>'+r.pos+'</td><td>'+rotulo(r.a)+'</td><td>'+rotulo(r.b)+'</td><td><span class="tag '+s+'">'+t+'</span></td>'+
+  let h='<table><tr><th>Pos.</th><th>Frente</th><th>Verso</th><th>Situação</th><th></th></tr>';
+  its.slice().sort((a,b)=>posBaixo(b)-posBaixo(a)).forEach(r=>{const[s,t]=situacao(r);
+    h+='<tr><td>'+posBaixo(r)+'</td><td>'+rotulo(r.a)+'</td><td>'+rotulo(r.b)+'</td><td><span class="tag '+s+'">'+t+'</span></td>'+
     '<td style="text-align:right"><button style="padding:4px 9px;font-size:13px" onclick="apagarPos(\''+End(r)+'#'+r.pos+'\')">apagar</button></td></tr>';});
   document.getElementById('pilha').innerHTML=h+'</table>';
 }
@@ -424,7 +435,7 @@ function desenhaResultados(cx,lista,clicavel){
       +(r[6]?'<span class="tag t-ile" style="margin-left:6px">sem foto</span>':'');
     return '<div class="item'+(ja?' usado':'')+'" style="'+(foraG?'background:var(--vermelho-claro)':'')+'"'+(clicavel?' onclick="selecionar('+i+')"':'')+'>'+
     '<div><div class="num">'+r[3]+bx+'</div><div class="sub">'+UN[r[0]]+' · '+NV[r[1]]+' · cartão '+zero(r[2])+(r[4]!=='—'?' · SISGAB '+r[4]:'')+'</div></div>'+
-    '<div class="sub" style="text-align:right;white-space:nowrap">'+(ja?'<b class="end">'+End(ja)+'</b><br>posição '+ja.pos:'não localizado')+'</div></div>';}).join('');
+    '<div class="sub" style="text-align:right;white-space:nowrap">'+(ja?'<b class="end">'+End(ja)+'</b><br>'+posBaixo(ja)+'º de baixo':'não localizado')+'</div></div>';}).join('');
 }
 busca2.addEventListener('input',()=>desenhaResultados(res2,procurar(busca2.value,true),false));
 tec.innerHTML=['1','2','3','4','5','6','7','8','9','C','0','<'].map(t=>
@@ -463,7 +474,7 @@ function aba(n){
     document.getElementById('pg-'+x).className=x===n?'':'oculto';
     document.getElementById('ab-'+x).className=x===n?'sel':'';});
   if(n==='mapa')atualizaMapa();
-  if(n==='dados')desenhaCfg();
+  if(n==='dados'){desenhaCfg();pintaSentido();}
 }
 function desenhaCfg(){
   cfgLista.innerHTML=cfg.map((x,i)=>
@@ -487,10 +498,10 @@ function baixar(nome,txt,tipo){
   a.href=u;a.download=nome;a.click();URL.revokeObjectURL(u);
 }
 function exportarCSV(){
-  const l=['Endereco;Estante;Coluna;Prateleira;Posicao;SerieA;SerieB;Unidade;Nivel;Cartao;SISGAB;Situacao'];
+  const l=['Endereco;Estante;Coluna;Prateleira;PosicaoDeBaixo;SerieA;SerieB;Unidade;Nivel;Cartao;SISGAB;Situacao'];
   Object.values(reg).sort((x,y)=>End(x).localeCompare(End(y))||x.pos-y.pos).forEach(r=>{
     const b=(r.a!==null&&r.a!=='ILEG')?DB[r.a]:((r.b!==null&&r.b!=='ILEG')?DB[r.b]:null);
-    l.push([End(r),r.e,r.c,r.p,r.pos,rotulo(r.a),rotulo(r.b),b?UN[b[0]]:'',b?NV[b[1]]:'',b?zero(b[2]):'',b?b[4]:'',situacao(r)[1]].join(';'));});
+    l.push([End(r),r.e,r.c,r.p,posBaixo(r),rotulo(r.a),rotulo(r.b),b?UN[b[0]]:'',b?NV[b[1]]:'',b?zero(b[2]):'',b?b[4]:'',situacao(r)[1]].join(';'));});
   baixar('mapeamento_coletes.csv','\ufeff'+l.join('\n'),'text/csv;charset=utf-8');
 }
 function exportarJSON(){baixar('backup_coletes_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({reg:reg,cfg:cfg}),'application/json');}
@@ -509,7 +520,8 @@ function apagarTudo(){
   reg={};salvar();desenhaPilha();desenhaDetalhe();atualizaMapa();limparSlots();atualizaResta();
 }
 /* ---------- fotos ---------- */
-const CF='coletes_urlfotos_v1';
+const CF='coletes_urlfotos_v1', CS='coletes_sentido_v1';
+let sentido=localStorage.getItem(CS)||'topo';
 let urlFotos=localStorage.getItem(CF)||'fotos/';
 let novas={};           // serie -> {blob,url}
 let fotoAtual=null;
@@ -537,6 +549,16 @@ function idbClear(){return idb().then(d=>new Promise((ok,err)=>{
   const t=d.transaction('f','readwrite');t.objectStore('f').clear();
   t.oncomplete=ok;t.onerror=()=>err(t.error);}));}
 
+function setSentido(v){
+  sentido=v;localStorage.setItem(CS,v);pintaSentido();
+  desenhaPilha();desenhaDetalhe();atualizaCab();
+}
+function pintaSentido(){
+  if(!document.getElementById('btTopo'))return;
+  btTopo.className=sentido==='topo'?'pri':'';
+  btBase.className=sentido==='base'?'pri':'';
+  btTopo.style.flex='1';btBase.style.flex='1';
+}
 function salvarFoto(){
   let u=cfgFoto.value.trim();
   if(u&&!u.endsWith('/'))u+='/';
@@ -647,7 +669,7 @@ function carregaNovas(){
   }).catch(()=>contaNovas());
 }
 
-cfgFoto.value=urlFotos;carregaNovas();
+cfgFoto.value=urlFotos;carregaNovas();pintaSentido();
 montaGrupos();desenhaSala();desenhaSlots();desenhaPilha();atualizaCab();atualizaMapa();atualizaResta();
 </script>
 </body>
