@@ -232,6 +232,8 @@ const porSerie={};
 DB.forEach((r,i)=>porSerie[r[3]]=i);
 const salvar=()=>localStorage.setItem(CH,JSON.stringify(reg));
 const End=r=>r.e+'-'+r.c+'-'+r.p;
+const EndL=r=>'Estante '+r.e+' · Coluna '+r.c+' · Prateleira '+r.p;
+const Lugar=r=>posBaixo(r)+'º lugar';
 const atual=()=>(est&&col&&pra)?{e:est,c:col,p:pra}:null;
 const zero=n=>String(n).padStart(2,'0');
 const acheEst=id=>cfg.find(x=>x.id===id);
@@ -276,25 +278,25 @@ function desenhaDetalhe(){
   const d=document.getElementById('detalhe');
   if(!est){d.innerHTML='';return;}
   const E=acheEst(est);
-  let h='<div class="sub" style="margin-bottom:6px">Estante '+est+' — colunas da esquerda para a direita, prateleiras de cima para baixo</div><div class="vaos">';
+  let h='<div class="sub" style="margin-bottom:6px">Estante '+est+' — colunas da esquerda para a direita · prateleira 1 é a de baixo</div><div class="vaos">';
   E.cols.forEach((np,ci)=>{
     const c=ci+1;
     h+='<div class="vao"><div class="vt">col '+c+'</div>';
-    for(let p=1;p<=np;p++){
+    for(let p=np;p>=1;p--){
       const n=conta(est,c,p);
-      const cls='cel'+(est===est&&col===c&&pra===p?' sel':(n?' tem':''));
+      const cls='cel'+(col===c&&pra===p?' sel':(n?' tem':''));
       h+='<div class="'+cls+'" onclick="pickCel('+c+','+p+')">'+(n?n:p)+'</div>';
     }
     h+='</div>';
   });
-  d.innerHTML=h+'</div><div class="sub" style="margin-top:6px">O número dentro do quadrado é quantos coletes já foram lançados ali. Em branco, mostra a prateleira.</div>';
+  d.innerHTML=h+'</div><div class="sub" style="margin-top:6px">O número dentro do quadrado é quantos coletes já foram lançados ali. Em branco, mostra o número da prateleira.</div>';
 }
 function pickEst(id){est=id;col=null;pra=null;desenhaSala();desenhaDetalhe();atualizaCab();desenhaPilha();}
 function pickCel(c,p){col=c;pra=p;desenhaDetalhe();atualizaCab();desenhaPilha();}
 function atualizaCab(){
   const e=atual();
-  document.getElementById('endTxt').textContent=e?End(e):'—';
-  document.getElementById('proxPos').textContent=e?(sentido==='base'?(naPilha(e).length+1)+'º de baixo':'o próximo de cima'):'—';
+  document.getElementById('endTxt').textContent=e?EndL(e):'—';
+  document.getElementById('proxPos').textContent=e?(sentido==='base'?(naPilha(e).length+1)+'º lugar':'o próximo, contado no fim'):'—';
 }
 function mostra(cls,txt){const a=document.getElementById('aviso');a.className='aviso on '+cls;a.innerHTML=txt;}
 function escondeAviso(){document.getElementById('aviso').className='aviso';}
@@ -354,7 +356,7 @@ function selecionar(i){
   else if(foraGrupo){bip(400,.3);
     mostra('a-er','Este colete é da <b>'+UN[r[0]]+' · '+NV[r[1]]+'</b>, e você marcou a pilha como '+UN[grupo[0]].split(' ·')[0]+' · '+NV[grupo[1]]+'. Ou o colete está guardado no lugar errado, ou o grupo lá em cima está errado. Confira antes de gravar.');}
   else if(ja){bip(520,.28);
-    mostra('a-at','O número '+r[3]+' já foi lançado em <b>'+End(ja)+'</b>, posição '+posBaixo(ja)+' de baixo para cima. Puxe aquele colete e confronte os dois — pode ser painel trocado ou etiqueta lida errado.');}
+    mostra('a-at','O número '+r[3]+' já foi lançado na <b>'+EndL(ja)+'</b>, '+Lugar(ja)+'. Puxe aquele colete e confronte os dois — pode ser painel trocado ou etiqueta lida errado.');}
   else if(r[6]){bip(660,.22);
     mostra('a-at','Este colete <b>ainda não foi fotografado</b>. Como ele já está na sua mão, aproveite e tire a foto agora — depois marque como resolvido na aba Pendentes.');}
   else escondeAviso();
@@ -386,7 +388,7 @@ function gravar(){
   salvar();
   if(A!==null&&B!==null&&A!=='ILEG'&&B!=='ILEG'&&A!==B){bip(320,.34);
     mostra('a-er','Painéis diferentes: '+DB[A][3]+' na frente e '+DB[B][3]+' no verso. Gravado assim mesmo, aparece na aba Mapa.');}
-  else {bip(880,.1);mostra('a-ok','Gravado. É o '+posBaixo(reg[End(e)+'#'+pos])+'º de baixo para cima nesta pilha.');}
+  else {bip(880,.1);mostra('a-ok','Gravado no '+Lugar(reg[End(e)+'#'+pos])+' desta prateleira.');}
   pan={F:{buf:'',idx:null},V:{buf:'',idx:null}};lado='F';avisouVazio='';limpaFoto();
   desenhaSlots();desenhaPilha();desenhaDetalhe();atualizaCab();atualizaResta();
 }
@@ -435,7 +437,7 @@ function desenhaResultados(cx,lista,clicavel){
       +(r[6]?'<span class="tag t-ile" style="margin-left:6px">sem foto</span>':'');
     return '<div class="item'+(ja?' usado':'')+'" style="'+(foraG?'background:var(--vermelho-claro)':'')+'"'+(clicavel?' onclick="selecionar('+i+')"':'')+'>'+
     '<div><div class="num">'+r[3]+bx+'</div><div class="sub">'+UN[r[0]]+' · '+NV[r[1]]+' · cartão '+zero(r[2])+(r[4]!=='—'?' · SISGAB '+r[4]:'')+'</div></div>'+
-    '<div class="sub" style="text-align:right;white-space:nowrap">'+(ja?'<b class="end">'+End(ja)+'</b><br>'+posBaixo(ja)+'º de baixo':'não localizado')+'</div></div>';}).join('');
+    '<div class="sub" style="text-align:right;white-space:nowrap">'+(ja?'<b class="end">'+End(ja)+'</b><br>'+Lugar(ja):'não localizado')+'</div></div>';}).join('');
 }
 busca2.addEventListener('input',()=>desenhaResultados(res2,procurar(busca2.value,true),false));
 tec.innerHTML=['1','2','3','4','5','6','7','8','9','C','0','<'].map(t=>
@@ -466,7 +468,7 @@ function atualizaMapa(){
   const cont={};vals.forEach(r=>{const k=End(r);cont[k]=(cont[k]||0)+1;});
   const ks=Object.keys(cont).sort();
   ocupacao.innerHTML=ks.length?'<table><tr><th>Prateleira</th><th>Coletes</th></tr>'+
-    ks.map(k=>'<tr><td class="end">'+k+'</td><td>'+cont[k]+'</td></tr>').join('')+'</table>'
+    ks.map(k=>{const[e2,c2,p2]=k.split('-');return '<tr><td>Estante '+e2+' · Coluna '+c2+' · Prateleira '+p2+'</td><td>'+cont[k]+'</td></tr>';}).join('')+'</table>'
     :'<p class="sub" style="margin:0">Nenhuma prateleira lançada ainda.</p>';
 }
 function aba(n){
@@ -498,10 +500,10 @@ function baixar(nome,txt,tipo){
   a.href=u;a.download=nome;a.click();URL.revokeObjectURL(u);
 }
 function exportarCSV(){
-  const l=['Endereco;Estante;Coluna;Prateleira;PosicaoDeBaixo;SerieA;SerieB;Unidade;Nivel;Cartao;SISGAB;Situacao'];
+  const l=['Endereco;Estante;Coluna;Prateleira;Lugar;SerieFrente;SerieVerso;Unidade;Nivel;Cartao;SISGAB;Situacao'];
   Object.values(reg).sort((x,y)=>End(x).localeCompare(End(y))||x.pos-y.pos).forEach(r=>{
     const b=(r.a!==null&&r.a!=='ILEG')?DB[r.a]:((r.b!==null&&r.b!=='ILEG')?DB[r.b]:null);
-    l.push([End(r),r.e,r.c,r.p,posBaixo(r),rotulo(r.a),rotulo(r.b),b?UN[b[0]]:'',b?NV[b[1]]:'',b?zero(b[2]):'',b?b[4]:'',situacao(r)[1]].join(';'));});
+    l.push([EndL(r)+' · '+Lugar(r),r.e,r.c,r.p,posBaixo(r),rotulo(r.a),rotulo(r.b),b?UN[b[0]]:'',b?NV[b[1]]:'',b?zero(b[2]):'',b?b[4]:'',situacao(r)[1]].join(';'));});
   baixar('mapeamento_coletes.csv','\ufeff'+l.join('\n'),'text/csv;charset=utf-8');
 }
 function exportarJSON(){baixar('backup_coletes_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({reg:reg,cfg:cfg}),'application/json');}
