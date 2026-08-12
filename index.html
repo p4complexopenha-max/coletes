@@ -127,13 +127,13 @@ display:flex;justify-content:space-between;align-items:center;gap:8px}
 <div id="campo" style="font-size:24px;font-weight:700;letter-spacing:2px;min-height:32px;color:var(--tinta)">—</div>
 </div>
 <div id="extraVerso" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"></div>
-<div id="res1" style="margin-top:8px"></div>
-<div id="fotoBox" style="margin-top:8px"></div>
 <div class="aviso" id="aviso"></div>
 <input type="file" id="cam" accept="image/*" capture="environment" class="oculto" onchange="recebeFoto(this)">
 
 <div id="tec" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px"></div>
-<button class="pri" onclick="gravar()" style="width:100%;padding:15px 0;margin-top:6px;font-size:16px">Gravar colete</button>
+<div id="res1" style="margin-top:8px"></div>
+<div id="fotoBox" style="margin-top:8px"></div>
+<button class="pri" onclick="gravar()" style="width:100%;padding:15px 0;margin-top:8px;font-size:16px">Gravar colete</button>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
 <button onclick="versoDiferente()" id="btVerso" style="padding:11px 0;font-size:13px">Verso diferente</button>
 <button onclick="marcarIlegivel()" style="padding:11px 0;font-size:13px">Sem etiqueta</button>
